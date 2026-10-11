@@ -117,18 +117,33 @@ Neither side can win on a reading that was already sitting there when they acted
 
 ## Verified live on Studio Next
 
+Every row is a real transaction, against real hosts, with nothing mocked.
+
+### The three outcomes
+
 | step | transaction | outcome |
 |---|---|---|
-| Deploy PROOF | [`0x473af790...`](https://explorer-studio-dev.genlayer.com/tx/0x473af79091c7906c9075b52a45663b287581b8564c6823de95a159dcc0b108a5) | source byte-identical to the bundle in this repo |
-| Deploy LINK | [`0x1d5502b4...`](https://explorer-studio-dev.genlayer.com/tx/0x1d5502b48b38aa984c216d7a7a653cca1dbcbc646ce7f51eadbafda277159fcc) | |
-| Deploy BOND | [`0x8f966b9b...`](https://explorer-studio-dev.genlayer.com/tx/0x8f966b9b84dc49d9a174ea225c1d482debebd726626b0244b28f8b471883f5dd) | |
-| Deploy GUARD | [`0x1fbe9d17...`](https://explorer-studio-dev.genlayer.com/tx/0x1fbe9d176bc2395e2b320434c4facd99330a297027a8bab0dc3ebc51ee42ef24) | pointed at LINK |
 | Claim `example.com` | [`0xcd8ae371...`](https://explorer-studio-dev.genlayer.com/tx/0xcd8ae3710ed0735b6e1dd0af85455c0f7db1a04529cb80f28d34079a811233ee) | token and URL derived by the contract |
-| Check it | [`0x82bc78a6...`](https://explorer-studio-dev.genlayer.com/tx/0x82bc78a67e892ae1e0504e2e8027c477ca6915beca47628ef8b07aacf1dd0c62) | **`missing`**: `nothing is published at that address`. The site answered, and what it said was no |
+| Check it | [`0x82bc78a6...`](https://explorer-studio-dev.genlayer.com/tx/0x82bc78a67e892ae1e0504e2e8027c477ca6915beca47628ef8b07aacf1dd0c62) | **`missing`**: `nothing is published at that address` |
 | Claim a host that does not resolve | [`0x09949a98...`](https://explorer-studio-dev.genlayer.com/tx/0x09949a98b55953d3fc9ab0f7c1fd61c46b9daa4817059a4a93498b946c49ec0c) | |
 | Check it | [`0x46236b18...`](https://explorer-studio-dev.genlayer.com/tx/0x46236b1841f6ab1eb34efcb29a23b5731d97ca4b698236d5d83c1dab4ad350c5) | **`unreachable`**: `the document could not be fetched`. Same contract, different claim about the world |
+| Claim the GitHub handle `jennivarl` | [`0x0cc3b3c8...`](https://explorer-studio-dev.genlayer.com/tx/0x0cc3b3c832a0b61d61cd55609358b5a9ad26f6437315fb8514888b364d11522f) | against a real public gist |
+| Check it | [`0xfc2764d7...`](https://explorer-studio-dev.genlayer.com/tx/0xfc2764d7bf6caa1168ecb9c929ed9ae6ba3ed4ceaab5bc7069838be5e9b70ccd) | **`verified`**: `the token is published by that account`. Validators fetched GitHub's API, matched `owner.login` and found the token on a line of its own |
 
-Those two rows are the design in one place: the same contract, reading two real hosts, and refusing to call them the same thing.
+### The money
+
+| step | transaction | outcome |
+|---|---|---|
+| Publish the verified claim in the directory | [`0x2904522c...`](https://explorer-studio-dev.genlayer.com/tx/0x2904522ccbfbccba7c99c71273c9d91e2ef079785533c68f86f16d839a0fe97b) | LINK refuses anything not verified, and only the prover may publish it |
+| Stake 0.2 GEN behind it | [`0xd796c856...`](https://explorer-studio-dev.genlayer.com/tx/0xd796c8561dacf1442707b7e4608dce43757006f4baabc7e2c28b5dbcbd7be3e3) | the binding had to be live and fresh |
+| A second account stakes 0.02 against it | [`0x74953e04...`](https://explorer-studio-dev.genlayer.com/tx/0x74953e048f04a834a322d6d2717aab3e51cafeed05655ba6a418ccceedff41d0) | a tenth of the deposit, from a different address |
+| Resolve immediately | [`0x3457afec...`](https://explorer-studio-dev.genlayer.com/tx/0x3457afec9bf1843b5c8b99996fafa8a02899661cb983fb96ae8b7813fba58695) | **decided nothing**: `no check has been taken since the challenge`. Neither side may win on a reading that was already sitting there |
+| Take a fresh check | [`0x40a50a73...`](https://explorer-studio-dev.genlayer.com/tx/0x40a50a7349e14d9cc8d1fbdaa142863294e13c1ee8fbd3ddc915c2970c8bdb07) | still `verified` |
+| Resolve | [`0x23f969f0...`](https://explorer-studio-dev.genlayer.com/tx/0x23f969f0eb2cde6553dd5e471dc3d9f284285d308a42c2ce78f0a5aca53a5ac6) | **the owner took both**: 37.372000 to 37.591874 GEN, the 0.2 deposit plus the challenger's 0.02 stake. `committed` fell to 0 |
+
+The deploys: PROOF [`0x473af790...`](https://explorer-studio-dev.genlayer.com/tx/0x473af79091c7906c9075b52a45663b287581b8564c6823de95a159dcc0b108a5), LINK [`0x1d5502b4...`](https://explorer-studio-dev.genlayer.com/tx/0x1d5502b48b38aa984c216d7a7a653cca1dbcbc646ce7f51eadbafda277159fcc), BOND [`0x8f966b9b...`](https://explorer-studio-dev.genlayer.com/tx/0x8f966b9b84dc49d9a174ea225c1d482debebd726626b0244b28f8b471883f5dd), GUARD [`0x1fbe9d17...`](https://explorer-studio-dev.genlayer.com/tx/0x1fbe9d176bc2395e2b320434c4facd99330a297027a8bab0dc3ebc51ee42ef24).
+
+**Not shown live:** a challenger winning, which needs a published proof to actually be taken down. The `missing` outcome that would trigger it is proven live in the first table, and the slash itself is covered by the test suite.
 
 ---
 
