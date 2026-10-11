@@ -1,0 +1,117 @@
+# v0.3.0
+# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
+"""
+GUARD. The whole of what it takes to use this from another contract.
+
+Not part of the system: this is the reference consumer, here so nobody has
+to read BOND to work out the pattern. It gates an action on the caller
+controlling a named resource, which is the thing the other three exist to
+make possible.
+
+    allow(kind, resource)   the operator names a resource that may act
+    act(note)               anyone controlling one of them may do so
+    actions()               what was done, and by which resource
+
+The gate is one line:
+
+    gl.contract.get_at(self.link).view().controls(kind, resource, caller)
+
+Two things are worth copying. It asks `controls`, which answers live and
+fresh rather than ever, so a proof that lapsed stops opening the door
+without anybody having to revoke anything. And it records which resource
+let the caller in, so an action can be audited later against a directory
+that has since moved on.
+"""
+
+from dataclasses import dataclass
+
+import genlayer as gl
+from genlayer.types import *
+
+
+@gl.storage.allow
+@dataclass
+class Act:
+    actor: Address
+    kind: str
+    resource: str
+    note: str
+    at: str
+
+
+class Guard(gl.contract.Contract):
+    operator: Address
+    link: Address
+    # "kind:resource" for each resource allowed through the gate.
+    allowed: gl.storage.DynArray[str]
+    acts: gl.storage.DynArray[Act]
+
+    def __init__(self, link: str):
+        self.operator = gl.message.sender_address
+        self.link = _address(link)
+
+    @gl.public.write
+    def allow(self, kind: str, resource: str) -> dict:
+        """Name a resource whose controller may act. Operator only."""
+        if gl.message.sender_address.as_hex.lower() != self.operator.as_hex.lower():
+            raise gl.vm.UserError("only the operator may change the list")
+        slot = kind.strip().lower() + ":" + resource.strip().lower()
+        if not kind.strip() or not resource.strip():
+            raise gl.vm.UserError("name a kind and a resource")
+        for existing in self.allowed:
+            if existing == slot:
+                raise gl.vm.UserError("already allowed: " + slot)
+        self.allowed.append(slot)
+        return {"allowed": [a for a in self.allowed]}
+
+    @gl.public.write
+    def act(self, note: str) -> dict:
+        """
+        Do the gated thing, if the caller controls an allowed resource.
+
+        Asks the directory live. Nothing is cached here, because a cached
+        answer is exactly how a lapsed proof keeps opening a door.
+        """
+        caller = gl.message.sender_address
+        directory = gl.contract.get_at(self.link)
+        for slot in self.allowed:
+            parts = slot.split(":", 1)
+            if len(parts) != 2:
+                continue
+            kind, resource = parts[0], parts[1]
+            if bool(directory.view().controls(kind, resource, caller.as_hex)):
+                record = Act(actor=caller, kind=kind, resource=resource, note=note.strip()[:200], at=_stamp())
+                self.acts.append(record)
+                return {
+                    "acted": True,
+                    "by": caller.as_hex,
+                    "as": slot,
+                    "note": record.note,
+                    "at": record.at,
+                }
+        raise gl.vm.UserError("that address does not control any allowed resource")
+
+    @gl.public.view
+    def actions(self) -> list:
+        return [
+            {"actor": a.actor.as_hex, "kind": a.kind, "resource": a.resource, "note": a.note, "at": a.at}
+            for a in self.acts
+        ]
+
+    @gl.public.view
+    def allow_list(self) -> list:
+        return [a for a in self.allowed]
+
+    @gl.public.view
+    def settings(self) -> dict:
+        return {"operator": self.operator.as_hex, "link": self.link.as_hex}
+
+
+def _stamp() -> str:
+    return str(gl.message.raw["datetime"])
+
+
+def _address(value) -> Address:
+    if hasattr(value, "as_hex"):
+        return value
+    return Address(str(value).strip())

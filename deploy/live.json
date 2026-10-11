@@ -1,0 +1,17 @@
+{
+  "network": "GenLayer Studio Next",
+  "chainId": 61997,
+  "rpc": "https://studio-next.genlayer.com/api",
+  "explorer": "https://explorer-studio-dev.genlayer.com",
+  "proof": "0x7eC8608A12ea2B0d763602f20EC42429172AD4C9",
+  "link": "0xc27Bf383784db5Bb8a02EA99708cc21fd492F0d6",
+  "bond": "0x8Dbf08E28F72248E026Ac9331AE610dA651A1b7d",
+  "guard": "0xEB9432A809b2821db071eef02cCd6C4AD1ab621e",
+  "deployed": "2026-10-11",
+  "deployTx": {
+    "proof": "0x473af79091c7906c9075b52a45663b287581b8564c6823de95a159dcc0b108a5",
+    "link": "0x1d5502b48b38aa984c216d7a7a653cca1dbcbc646ce7f51eadbafda277159fcc",
+    "bond": "0x8f966b9b84dc49d9a174ea225c1d482debebd726626b0244b28f8b471883f5dd",
+    "guard": "0x1fbe9d176bc2395e2b320434c4facd99330a297027a8bab0dc3ebc51ee42ef24"
+  }
+}
