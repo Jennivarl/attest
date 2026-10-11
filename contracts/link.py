@@ -58,21 +58,25 @@ class Binding:
 
 
 class Link(gl.contract.Contract):
+    # The one PROOF this directory believes. Fixed when the directory is
+    # deployed and never again, because a caller who can name the contract
+    # that vouches for them can deploy one that vouches for anybody.
+    proof: Address
     bindings: gl.storage.TreeMap[str, Binding]
     # Every binding ever published. The lookups below filter this rather
     # than keeping index maps: a nested collection inside a TreeMap is a
     # sharper tool than this needs, and the views that read it are free.
     binding_ids: gl.storage.DynArray[str]
 
-    def __init__(self):
-        pass
+    def __init__(self, proof: str):
+        self.proof = _address(proof)
 
     # ----------------------------------------------------------------
     # publishing
     # ----------------------------------------------------------------
 
     @gl.public.write
-    def adopt(self, proof: str, claim_id: str) -> dict:
+    def adopt(self, claim_id: str) -> dict:
         """
         Publish a verified claim in the directory.
 
@@ -81,8 +85,11 @@ class Link(gl.contract.Contract):
         same as being entitled to list them, and a directory anyone can write
         to on somebody else's behalf is a directory of other people's
         business.
+
+        The claim is read from the PROOF this directory was deployed
+        against, never from one the caller names.
         """
-        at = _address(proof)
+        at = self.proof
         key = claim_id.strip().lower()
 
         record = gl.contract.get_at(at).view().get_claim(key)
@@ -218,6 +225,11 @@ class Link(gl.contract.Contract):
         if key not in self.bindings:
             raise gl.vm.UserError("no such binding: " + key)
         return _as_dict(key, self.bindings[key], _now())
+
+    @gl.public.view
+    def settings(self) -> dict:
+        """Which PROOF this directory believes, so a consumer can check."""
+        return {"proof": self.proof.as_hex, "fresh_for_seconds": str(FRESH_SECONDS)}
 
     @gl.public.view
     def binding_list(self) -> list:

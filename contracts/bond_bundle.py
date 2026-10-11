@@ -174,21 +174,23 @@ class Bond:
     reason: str
 
 class BondContract(gl.contract.Contract):
+    link: Address
     bonds: gl.storage.TreeMap[str, Bond]
     bond_ids: gl.storage.DynArray[str]
     committed: u256
 
-    def __init__(self):
+    def __init__(self, link: str):
+        self.link = _address(link)
         self.committed = 0
 
     @gl.public.write.payable
-    def post(self, link: str, binding_id: str) -> dict:
+    def post(self, binding_id: str) -> dict:
         amount = gl.message.value
         if amount <= 0:
             raise gl.vm.UserError('send the deposit with this call')
         if amount < CHALLENGE_DENOMINATOR:
             raise gl.vm.UserError('that deposit is too small to be challenged')
-        at = _address(link)
+        at = self.link
         key = binding_id.strip().lower()
         binding = gl.contract.get_at(at).view().get_binding(key)
         owner = _address(binding['owner'])
@@ -332,6 +334,10 @@ class BondContract(gl.contract.Contract):
     @gl.public.view
     def reserves(self) -> dict:
         return {'committed': str(self.committed)}
+
+    @gl.public.view
+    def settings(self) -> dict:
+        return {'link': self.link.as_hex}
 
     @gl.public.view
     def terms(self) -> dict:

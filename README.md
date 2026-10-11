@@ -19,11 +19,11 @@ No model is involved anywhere. Validators fetch and compare strings.
 |---|---|
 | Network | GenLayer Studio Next, chain id 61997, `https://studio-next.genlayer.com/api` |
 | Engine | Consensus v0.6, GenVM v0.3, runner `py-genlayer:5jycge...` |
-| PROOF | [`0x7eC8608A12ea2B0d763602f20EC42429172AD4C9`](https://explorer-studio-dev.genlayer.com/address/0x7eC8608A12ea2B0d763602f20EC42429172AD4C9) |
-| LINK | [`0xc27Bf383784db5Bb8a02EA99708cc21fd492F0d6`](https://explorer-studio-dev.genlayer.com/address/0xc27Bf383784db5Bb8a02EA99708cc21fd492F0d6) |
-| BOND | [`0x8Dbf08E28F72248E026Ac9331AE610dA651A1b7d`](https://explorer-studio-dev.genlayer.com/address/0x8Dbf08E28F72248E026Ac9331AE610dA651A1b7d) |
-| GUARD | [`0xEB9432A809b2821db071eef02cCd6C4AD1ab621e`](https://explorer-studio-dev.genlayer.com/address/0xEB9432A809b2821db071eef02cCd6C4AD1ab621e) |
-| Tests | 120, `python -m pytest -q` |
+| PROOF | [`0xfd7cF85675B439C74E494018E4a8C9B8cce94774`](https://explorer-studio-dev.genlayer.com/address/0xfd7cF85675B439C74E494018E4a8C9B8cce94774) |
+| LINK | [`0x623250296Ab340a620FFF2fBFA3cE0F75BA2f278`](https://explorer-studio-dev.genlayer.com/address/0x623250296Ab340a620FFF2fBFA3cE0F75BA2f278) |
+| BOND | [`0xe9166aeeBd401384B4BF0D8E5357A9b219365E59`](https://explorer-studio-dev.genlayer.com/address/0xe9166aeeBd401384B4BF0D8E5357A9b219365E59) |
+| GUARD | [`0xD659085A558093b13B3EA37fb75C1aD995573338`](https://explorer-studio-dev.genlayer.com/address/0xD659085A558093b13B3EA37fb75C1aD995573338) |
+| Tests | 122, `python -m pytest -q` |
 
 ---
 
@@ -52,6 +52,22 @@ So when a check comes back `unreachable`, BOND decides nothing, moves nothing, a
 **Each address gets a different token for the same resource.** Otherwise one claimant's published file would prove everybody's claim.
 
 **The token never changes.** It is derived from the address and the resource and not from the time, so a proof can be re-checked years later without the claimant touching anything.
+
+---
+
+## Nothing chooses who it believes at call time
+
+Each contract here reads another, and every one of those addresses is fixed when the contract is deployed. None of them is ever an argument.
+
+| contract | reads | fixed how |
+|---|---|---|
+| LINK | PROOF | constructor |
+| BOND | LINK, and the PROOF named by the binding it read | constructor, then transitively |
+| GUARD | LINK | constructor |
+
+This is the single most important thing in the design and it is worth being blunt about why. An earlier version of `LINK.adopt` took the prover's address as an argument. Anyone could deploy a contract whose `get_claim` returned `verified` for anything, point the directory at it, and be listed as controlling a domain they had never touched. The same mistake in `BOND.post` would have let somebody stake behind nothing and never be slashed, while `backing()` reported them as collateralised.
+
+A contract that lets its caller choose who it believes has no guarantees at all, only the appearance of them. `settings()` on LINK and BOND publishes what each one trusts, so a consumer can check rather than assume.
 
 ---
 
@@ -123,27 +139,27 @@ Every row is a real transaction, against real hosts, with nothing mocked.
 
 | step | transaction | outcome |
 |---|---|---|
-| Claim `example.com` | [`0xcd8ae371...`](https://explorer-studio-dev.genlayer.com/tx/0xcd8ae3710ed0735b6e1dd0af85455c0f7db1a04529cb80f28d34079a811233ee) | token and URL derived by the contract |
-| Check it | [`0x82bc78a6...`](https://explorer-studio-dev.genlayer.com/tx/0x82bc78a67e892ae1e0504e2e8027c477ca6915beca47628ef8b07aacf1dd0c62) | **`missing`**: `nothing is published at that address` |
-| Claim a host that does not resolve | [`0x09949a98...`](https://explorer-studio-dev.genlayer.com/tx/0x09949a98b55953d3fc9ab0f7c1fd61c46b9daa4817059a4a93498b946c49ec0c) | |
-| Check it | [`0x46236b18...`](https://explorer-studio-dev.genlayer.com/tx/0x46236b1841f6ab1eb34efcb29a23b5731d97ca4b698236d5d83c1dab4ad350c5) | **`unreachable`**: `the document could not be fetched`. Same contract, different claim about the world |
-| Claim the GitHub handle `jennivarl` | [`0x0cc3b3c8...`](https://explorer-studio-dev.genlayer.com/tx/0x0cc3b3c832a0b61d61cd55609358b5a9ad26f6437315fb8514888b364d11522f) | against a real public gist |
-| Check it | [`0xfc2764d7...`](https://explorer-studio-dev.genlayer.com/tx/0xfc2764d7bf6caa1168ecb9c929ed9ae6ba3ed4ceaab5bc7069838be5e9b70ccd) | **`verified`**: `the token is published by that account`. Validators fetched GitHub's API, matched `owner.login` and found the token on a line of its own |
+| Claim the GitHub handle `jennivarl` | [`0x397b3fbb...`](https://explorer-studio-dev.genlayer.com/tx/0x397b3fbbef63f91dec53af293aa7108315d9fde029a47e02a53681dcaf6efb7f) | against a real public gist |
+| Check it | [`0xe4d245d0...`](https://explorer-studio-dev.genlayer.com/tx/0xe4d245d031d8773b9b169fbe46114fc8411dd4546443fc570f02dd58160c6572) | **`verified`**: `the token is published by that account`. Validators fetched GitHub's API, matched `owner.login` and found the token on a line of its own |
+| Claim `example.com` | [`0x0076dc46...`](https://explorer-studio-dev.genlayer.com/tx/0x0076dc46453a2a776e4d96e3ba9bebf832e1af0a39abb74f3e37caa02437cde8) | token and URL derived by the contract |
+| Check it | [`0xf75ffa19...`](https://explorer-studio-dev.genlayer.com/tx/0xf75ffa19f6064d847ed9cb942b88d49a951f4b0ecb27ca6729653ff657df9fc5) | **`missing`**: `nothing is published at that address`. The site answered, and what it said was no |
+| Claim a host that does not resolve | [`0xf9e2d175...`](https://explorer-studio-dev.genlayer.com/tx/0xf9e2d1759764dd5640a3e5c69c450cca18ea3fcc37c90aeb04c8ed93d4261665) | |
+| Check it | [`0x88278b9a...`](https://explorer-studio-dev.genlayer.com/tx/0x88278b9afb674a5e34b60e9c8e5d40efd4dd41ad5787fcc1b0e1ba463782911f) | **`unreachable`**: `the document could not be fetched`. Same contract, a different claim about the world |
 
 ### The money
 
 | step | transaction | outcome |
 |---|---|---|
-| Publish the verified claim in the directory | [`0x2904522c...`](https://explorer-studio-dev.genlayer.com/tx/0x2904522ccbfbccba7c99c71273c9d91e2ef079785533c68f86f16d839a0fe97b) | LINK refuses anything not verified, and only the prover may publish it |
-| Stake 0.2 GEN behind it | [`0xd796c856...`](https://explorer-studio-dev.genlayer.com/tx/0xd796c8561dacf1442707b7e4608dce43757006f4baabc7e2c28b5dbcbd7be3e3) | the binding had to be live and fresh |
-| A second account stakes 0.02 against it | [`0x74953e04...`](https://explorer-studio-dev.genlayer.com/tx/0x74953e048f04a834a322d6d2717aab3e51cafeed05655ba6a418ccceedff41d0) | a tenth of the deposit, from a different address |
-| Resolve immediately | [`0x3457afec...`](https://explorer-studio-dev.genlayer.com/tx/0x3457afec9bf1843b5c8b99996fafa8a02899661cb983fb96ae8b7813fba58695) | **decided nothing**: `no check has been taken since the challenge`. Neither side may win on a reading that was already sitting there |
-| Take a fresh check | [`0x40a50a73...`](https://explorer-studio-dev.genlayer.com/tx/0x40a50a7349e14d9cc8d1fbdaa142863294e13c1ee8fbd3ddc915c2970c8bdb07) | still `verified` |
-| Resolve | [`0x23f969f0...`](https://explorer-studio-dev.genlayer.com/tx/0x23f969f0eb2cde6553dd5e471dc3d9f284285d308a42c2ce78f0a5aca53a5ac6) | **the owner took both**: 37.372000 to 37.591874 GEN, the 0.2 deposit plus the challenger's 0.02 stake. `committed` fell to 0 |
+| Publish the verified claim in the directory | [`0xb2197ffd...`](https://explorer-studio-dev.genlayer.com/tx/0xb2197ffd8fc8a555fa2135790842fb26fb3ad9f0156c1ec45875f0efe8c56ff6) | LINK refuses anything not verified, reads it from the PROOF it was deployed against, and only the prover may publish it |
+| Stake 0.2 GEN behind it | [`0x833f6793...`](https://explorer-studio-dev.genlayer.com/tx/0x833f679319b1ff5ddc923c9223797a65267e0fcac5ba84859107c8d0947b9a87) | the binding had to be live and fresh |
+| A second account stakes 0.02 against it | [`0x458cfacf...`](https://explorer-studio-dev.genlayer.com/tx/0x458cfacf17a740c7dd7d50f48d7514f68ff196a78d470950a711ac1cb3c85ab4) | a tenth of the deposit, from a different address |
+| Resolve immediately | [`0xbb8367ad...`](https://explorer-studio-dev.genlayer.com/tx/0xbb8367ad2c4b85a180ba82ac339882abbbbabe51dc99e27db13c54a20b659302) | **decided nothing**: `no check has been taken since the challenge`. Neither side may win on a reading that was already sitting there |
+| Take a fresh check | [`0x5043c35a...`](https://explorer-studio-dev.genlayer.com/tx/0x5043c35a6d7ee91bc1f66986b01cd67e1fc91bcdd5698a283cae6442d95ed493) | still `verified` |
+| Resolve | [`0x851f6400...`](https://explorer-studio-dev.genlayer.com/tx/0x851f64000a2fb35237c4387b5129218e307ca65dadb2039eb5f521d647d85f50) | **the owner took both**: 37.390457 to 37.610331 GEN, the 0.2 deposit plus the challenger's 0.02 stake. `committed` fell to 0 |
 
-The deploys: PROOF [`0x473af790...`](https://explorer-studio-dev.genlayer.com/tx/0x473af79091c7906c9075b52a45663b287581b8564c6823de95a159dcc0b108a5), LINK [`0x1d5502b4...`](https://explorer-studio-dev.genlayer.com/tx/0x1d5502b48b38aa984c216d7a7a653cca1dbcbc646ce7f51eadbafda277159fcc), BOND [`0x8f966b9b...`](https://explorer-studio-dev.genlayer.com/tx/0x8f966b9b84dc49d9a174ea225c1d482debebd726626b0244b28f8b471883f5dd), GUARD [`0x1fbe9d17...`](https://explorer-studio-dev.genlayer.com/tx/0x1fbe9d176bc2395e2b320434c4facd99330a297027a8bab0dc3ebc51ee42ef24).
+The deploys, in dependency order: PROOF [`0xdbfe8a44...`](https://explorer-studio-dev.genlayer.com/tx/0xdbfe8a447093cd4ab2e1ac292a154f7f285c85a01fb66432d2efa0a54c0bf596), LINK [`0x27323560...`](https://explorer-studio-dev.genlayer.com/tx/0x27323560419e7ae4d9967c73be290b15e997870a7725c980c6c485c158d77743), BOND [`0xd10f7d4b...`](https://explorer-studio-dev.genlayer.com/tx/0xd10f7d4bf430f4d716696fea41032cf9d7ee7eb87f2c9512b2a088f0e9f9b650), GUARD [`0x1a63e6af...`](https://explorer-studio-dev.genlayer.com/tx/0x1a63e6afe86ef645981f7422e877b8230ef41aecc3ee6fe4411de7049fd999d0). Each was told who it trusts as it went up.
 
-**Not shown live:** a challenger winning, which needs a published proof to actually be taken down. The `missing` outcome that would trigger it is proven live in the first table, and the slash itself is covered by the test suite.
+**Not shown live:** a challenger winning, which needs a published proof to actually be taken down. The `missing` outcome that would trigger it is proven live above, and the slash itself is covered by the test suite.
 
 ---
 
@@ -164,7 +180,7 @@ The deploys: PROOF [`0x473af790...`](https://explorer-studio-dev.genlayer.com/tx
 ```sh
 python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 python -m deploy.build_bundle          # the four files that actually deploy
-python -m pytest -q                    # 120 tests, no chain and no network
+python -m pytest -q                    # 122 tests, no chain and no network
 ```
 
 The tests run the contracts in genlayer-test's direct mode, in process. There is no node to start and nothing is fetched: the claimed domain and GitHub's API are answered from the test, so a test can produce states that are tedious to arrange for real, including a site that is down, a gist owned by somebody else, and a page that echoes the token without publishing it.
@@ -173,6 +189,15 @@ Direct mode loads one contract per process, so LINK, BOND and GUARD are tested a
 
 To drive the live copies:
 
+Deployment order matters, because each contract is told who it trusts:
+
+```sh
+node deploy/deploy.mjs contracts/proof_bundle.py
+node deploy/deploy.mjs contracts/link_bundle.py  <proof address>
+node deploy/deploy.mjs contracts/bond_bundle.py  <link address>
+node deploy/deploy.mjs contracts/guard_bundle.py <link address>
+```
+
 ```sh
 npm install
 export GENLAYER_KEYSTORE=~/.genlayer/keystores/mykey.json
@@ -180,6 +205,8 @@ export GENLAYER_PASSWORD=...
 node deploy/demo.mjs token domain example.com     # what to publish, and where
 node deploy/demo.mjs domain example.com           # open the claim
 node deploy/demo.mjs check <claim_id>             # fetch it, under consensus
+node deploy/demo.mjs adopt <claim_id>             # publish it in the directory
+node deploy/demo.mjs post  <binding_id> 0.2       # stake behind it
 ```
 
 Addresses live in [`deploy/live.json`](deploy/live.json). The password is read from the environment and is never stored in this repo.
@@ -200,7 +227,7 @@ deploy/chain.mjs            network, signing and payout fee allocations
 deploy/deploy.mjs           deploy one bundle
 deploy/verify.mjs           prove a live contract runs this exact bundle
 deploy/demo.mjs             drive the live copies
-test/                       120 tests
+test/                       122 tests
 ```
 
 GenVM loads a single source file with no access to siblings, so each bundle pastes a contract together with the pure module it imports. Comments and docstrings are stripped from the deployed copy, because a deploy costs gas per byte and a bundle over the cap returns a transaction hash and then simply does not exist. Edit the modules, never a bundle: a test regenerates them and fails if a committed copy has drifted.

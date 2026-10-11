@@ -46,7 +46,7 @@ def chain(direct_vm):
 
 @pytest.fixture
 def bond(direct_vm, direct_deploy, chain):
-    contract = direct_deploy(BUNDLE)
+    contract = direct_deploy(BUNDLE, link=LINK_AT)
     direct_vm.strict_mocks = False
     set_date(direct_vm, NOW)
     return contract
@@ -56,7 +56,7 @@ def post(vm, bond, who=OWNER, amount=DEPOSIT):
     vm.value = amount
     try:
         with vm.prank(who):
-            return bond.post(LINK_AT, BINDING)
+            return bond.post(BINDING)
     finally:
         vm.value = 0
 
@@ -337,3 +337,12 @@ def test_the_terms_are_published_rather_than_implied(bond):
     got = bond.terms()
     assert got["challenge_fraction"] == "1/10"
     assert got["notice_seconds"] == str(NOTICE_SECONDS)
+
+
+def test_the_directory_it_believes_is_fixed_not_chosen_by_a_caller(bond):
+    """
+    Otherwise anyone could deploy a directory that reports whatever they
+    like, stake behind nothing, and never be slashed, while `backing`
+    reported them as collateralised.
+    """
+    assert bond.settings()["link"].lower() == LINK_AT

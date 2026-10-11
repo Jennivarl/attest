@@ -3,15 +3,15 @@
   "chainId": 61997,
   "rpc": "https://studio-next.genlayer.com/api",
   "explorer": "https://explorer-studio-dev.genlayer.com",
-  "proof": "0x7eC8608A12ea2B0d763602f20EC42429172AD4C9",
-  "link": "0xc27Bf383784db5Bb8a02EA99708cc21fd492F0d6",
-  "bond": "0x8Dbf08E28F72248E026Ac9331AE610dA651A1b7d",
-  "guard": "0xEB9432A809b2821db071eef02cCd6C4AD1ab621e",
+  "proof": "0xfd7cF85675B439C74E494018E4a8C9B8cce94774",
+  "link": "0x623250296Ab340a620FFF2fBFA3cE0F75BA2f278",
+  "bond": "0xe9166aeeBd401384B4BF0D8E5357A9b219365E59",
+  "guard": "0xD659085A558093b13B3EA37fb75C1aD995573338",
   "deployed": "2026-10-11",
   "deployTx": {
-    "proof": "0x473af79091c7906c9075b52a45663b287581b8564c6823de95a159dcc0b108a5",
-    "link": "0x1d5502b48b38aa984c216d7a7a653cca1dbcbc646ce7f51eadbafda277159fcc",
-    "bond": "0x8f966b9b84dc49d9a174ea225c1d482debebd726626b0244b28f8b471883f5dd",
-    "guard": "0x1fbe9d176bc2395e2b320434c4facd99330a297027a8bab0dc3ebc51ee42ef24"
+    "proof": "0xdbfe8a447093cd4ab2e1ac292a154f7f285c85a01fb66432d2efa0a54c0bf596",
+    "link": "0x27323560419e7ae4d9967c73be290b15e997870a7725c980c6c485c158d77743",
+    "bond": "0xd10f7d4bf430f4d716696fea41032cf9d7ee7eb87f2c9512b2a088f0e9f9b650",
+    "guard": "0x1a63e6afe86ef645981f7422e877b8230ef41aecc3ee6fe4411de7049fd999d0"
   }
 }

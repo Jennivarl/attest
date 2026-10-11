@@ -40,7 +40,7 @@ def proof(direct_vm):
 
 @pytest.fixture
 def link(direct_vm, direct_deploy, proof):
-    contract = direct_deploy(BUNDLE)
+    contract = direct_deploy(BUNDLE, proof=PROOF_AT)
     direct_vm.strict_mocks = False
     set_date(direct_vm, NOW)
     return contract
@@ -48,7 +48,7 @@ def link(direct_vm, direct_deploy, proof):
 
 def adopt(vm, link, who=OWNER):
     with vm.prank(who):
-        return link.adopt(PROOF_AT, CLAIM)
+        return link.adopt(CLAIM)
 
 
 # --------------------------------------------------------------------
@@ -118,7 +118,7 @@ def test_two_addresses_proving_one_resource_are_both_reported(direct_vm, link, p
     other_claim = "0x" + STRANGER.hex() + ":domain:" + DOMAIN
     proof.set_claim(claim_id=other_claim, owner="0x" + STRANGER.hex())
     with direct_vm.prank(STRANGER):
-        link.adopt(PROOF_AT, other_claim)
+        link.adopt(other_claim)
 
     got = link.resolve("domain", DOMAIN)
     assert len(got["bindings"]) == 2
@@ -251,3 +251,11 @@ def test_anyone_may_refresh_because_it_only_copies_what_consensus_agreed(direct_
     proof.set_claim(status="missing", checked_at=NOW)
     with direct_vm.prank(STRANGER):
         assert link.refresh(BINDING)["live"] is False
+
+
+def test_the_prover_it_believes_is_fixed_not_chosen_by_a_caller(link):
+    """
+    A directory that lets a caller name the contract vouching for them is a
+    directory anyone can fill: deploy your own prover, have it say yes.
+    """
+    assert link.settings()["proof"].lower() == PROOF_AT

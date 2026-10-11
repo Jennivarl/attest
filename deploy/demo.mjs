@@ -118,11 +118,11 @@ if (step === "token") {
   console.log(`\n=> ${c.status.toUpperCase()}: ${c.note}`);
   console.log(`   ${c.url}`);
 } else if (step === "adopt") {
-  await write(LINK, "adopt", [PROOF, rest[0]]);
+  await write(LINK, "adopt", [rest[0]]);
 } else if (step === "refresh") {
   await write(LINK, "refresh", [rest[0]]);
 } else if (step === "post") {
-  await write(BOND, "post", [LINK, rest[0]], gen(rest[1]));
+  await write(BOND, "post", [rest[0]], gen(rest[1]));
 } else if (step === "challenge") {
   await write(BOND, "challenge", [rest[0]], gen(rest[1]));
 } else if (step === "resolve") {

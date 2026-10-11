@@ -160,15 +160,16 @@ class Binding:
     withdrawn_at: str
 
 class Link(gl.contract.Contract):
+    proof: Address
     bindings: gl.storage.TreeMap[str, Binding]
     binding_ids: gl.storage.DynArray[str]
 
-    def __init__(self):
-        pass
+    def __init__(self, proof: str):
+        self.proof = _address(proof)
 
     @gl.public.write
-    def adopt(self, proof: str, claim_id: str) -> dict:
-        at = _address(proof)
+    def adopt(self, claim_id: str) -> dict:
+        at = self.proof
         key = claim_id.strip().lower()
         record = gl.contract.get_at(at).view().get_claim(key)
         if str(record['status']) != VERIFIED:
@@ -251,6 +252,10 @@ class Link(gl.contract.Contract):
         if key not in self.bindings:
             raise gl.vm.UserError('no such binding: ' + key)
         return _as_dict(key, self.bindings[key], _now())
+
+    @gl.public.view
+    def settings(self) -> dict:
+        return {'proof': self.proof.as_hex, 'fresh_for_seconds': str(FRESH_SECONDS)}
 
     @gl.public.view
     def binding_list(self) -> list:

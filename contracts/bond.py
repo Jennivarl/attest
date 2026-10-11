@@ -12,7 +12,7 @@ So a claim can be backed by a deposit, and anyone who believes the proof has
 gone can put up a smaller stake and say so. Whoever is right takes the
 other's money.
 
-    post(link, binding_id)   stake behind your own published binding
+    post(binding_id)         stake behind your own published binding
     challenge(bond_id)       stake against it, which freezes the deposit
     resolve(bond_id)         settle it on a check taken after the challenge
     release(bond_id)         give notice that you want your deposit back
@@ -79,12 +79,17 @@ class Bond:
 
 
 class BondContract(gl.contract.Contract):
+    # The one directory this contract believes. Fixed at deployment: a
+    # caller who can name the directory can deploy one that says anything,
+    # and then nothing staked here would mean anything.
+    link: Address
     bonds: gl.storage.TreeMap[str, Bond]
     bond_ids: gl.storage.DynArray[str]
     # What is owed to somebody: deposits plus live challenge stakes.
     committed: u256
 
-    def __init__(self):
+    def __init__(self, link: str):
+        self.link = _address(link)
         self.committed = 0
 
     # ----------------------------------------------------------------
@@ -92,13 +97,17 @@ class BondContract(gl.contract.Contract):
     # ----------------------------------------------------------------
 
     @gl.public.write.payable
-    def post(self, link: str, binding_id: str) -> dict:
+    def post(self, binding_id: str) -> dict:
         """
         Stake behind a binding you published.
 
         The binding has to be live and fresh right now. Staking behind a
         proof nobody has checked lately would let an owner post a deposit
         they could never lose.
+
+        The binding is read from the directory this contract was deployed
+        against, and the PROOF that later settles a challenge comes from
+        that binding, so neither can be swapped by whoever calls this.
         """
         amount = gl.message.value
         if amount <= 0:
@@ -108,7 +117,7 @@ class BondContract(gl.contract.Contract):
             # bond cannot be challenged at all.
             raise gl.vm.UserError("that deposit is too small to be challenged")
 
-        at = _address(link)
+        at = self.link
         key = binding_id.strip().lower()
         binding = gl.contract.get_at(at).view().get_binding(key)
 
@@ -327,6 +336,10 @@ class BondContract(gl.contract.Contract):
     @gl.public.view
     def reserves(self) -> dict:
         return {"committed": str(self.committed)}
+
+    @gl.public.view
+    def settings(self) -> dict:
+        return {"link": self.link.as_hex}
 
     @gl.public.view
     def terms(self) -> dict:
